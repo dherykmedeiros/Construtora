@@ -27,14 +27,14 @@ export function renderLoginScreen() {
         </div>
     `;
 
-    document.getElementById("loginForm").addEventListener("submit", (e) => {
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
+        const senha = document.getElementById("password").value;
 
         // Valida o login
-        loginUser(email, password);
+        await loginUser(email, senha);
     });
 
     document.getElementById("linkCadastro").addEventListener("click", (e) => {

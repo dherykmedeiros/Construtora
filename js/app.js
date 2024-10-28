@@ -4,38 +4,72 @@ import { renderCadastroScreen } from './telas/cadastro.js';
 import { renderAdminScreen } from './telas/admin.js';
 import { renderClientScreen } from './telas/cliente.js';
 import { renderFiscalScreen } from './telas/fiscal.js';
+import { _supabase } from './supabase.js';
 
-// Função para adicionar usuário ao localStorage
-function addUser(user) {
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    users.push(user);
-    localStorage.setItem('users', JSON.stringify(users));
+// Função para salvar o usuário autenticado no localStorage
+function saveAuthenticatedUser(user) {
+    localStorage.setItem('authenticatedUser', JSON.stringify(user));
 }
 
-// Função para recuperar usuário do localStorage
-function getUserByEmail(email) {
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    return users.find(user => user.email === email);
+// Função para recuperar o usuário autenticado do localStorage
+function getAuthenticatedUser() {
+    return JSON.parse(localStorage.getItem('authenticatedUser'));
+}
+
+// Função para remover o usuário autenticado (logout)
+function logoutUser() {
+    localStorage.removeItem('authenticatedUser');
+    navigateTo('login');
+}
+
+// Função para adicionar usuário ao Supabase
+async function addUser(user) {
+    const { error } = await _supabase.from('usuarios').insert([user]);
+
+    if (error) {
+        console.error("Erro ao adicionar usuário:", error.message);
+        alert("Erro ao cadastrar usuário.");
+        return false;
+    }
+    alert("Usuário cadastrado com sucesso!");
+    return true;
 }
 
 // Função para verificar o login
-function loginUser(email, password) {
-    const user = getUserByEmail(email);
-    if (user && user.password === password) {
-        navigateTo(user.role); // Navega para a tela com base no tipo de usuário
-        return true;
+async function loginUser(email, password) {
+    const { data: user, error } = await _supabase
+        .from('usuarios')
+        .select('*')
+        .eq('email', email)
+        .eq('senha', password)
+        .single();
+
+    if (error || !user) {
+        alert("Email ou senha inválidos");
+        return false;
     }
-    alert("Email ou senha inválidos");
-    return false;
+
+    saveAuthenticatedUser(user); // Salva o usuário autenticado
+    navigateTo(user.cargo.toLowerCase()); // Navega para a tela com base no tipo de usuário
+    return true;
 }
 
 // Função para navegar para diferentes telas
 function navigateTo(screen) {
+    const authenticatedUser = getAuthenticatedUser();
+
+    // Redireciona automaticamente se o usuário já estiver autenticado
+    if (authenticatedUser) {
+        const roleScreen = authenticatedUser.cargo.toLowerCase();
+        if (screen === 'login') screen = roleScreen;
+    }
+
+    // Renderiza a tela com base no valor de `screen`
     if (screen === 'login') {
         renderLoginScreen();
     } else if (screen === 'cadastro') {
         renderCadastroScreen();
-    } else if (screen === 'admin') {
+    } else if (screen === 'administrador') {
         renderAdminScreen();
     } else if (screen === 'cliente') {
         renderClientScreen();
@@ -44,8 +78,9 @@ function navigateTo(screen) {
     }
 }
 
-// Inicializa na tela de login
-navigateTo('login');
+// Inicializa o aplicativo na tela de login ou na tela do usuário autenticado
+const authenticatedUser = getAuthenticatedUser();
+navigateTo(authenticatedUser ? authenticatedUser.cargo.toLowerCase() : 'login');
 
 // Exporta as funções para que outros módulos possam usá-las
-export { navigateTo, addUser, loginUser };
+export { navigateTo, addUser, loginUser, logoutUser };

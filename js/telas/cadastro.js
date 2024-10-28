@@ -9,26 +9,26 @@ export function renderCadastroScreen() {
             
             <form id="cadastroForm">
                 <div class="mb-4">
-                    <label for="username" class="block text-gray-700">Nome de Usuário:</label>
-                    <input type="text" id="username" class="border p-2 w-full" placeholder="Digite o nome de usuário" required>
+                    <label for="nome" class="block text-gray-700">Nome Completo:</label>
+                    <input type="text" id="nome" class="border p-2 w-full" placeholder="Digite seu nome completo" required>
                 </div>
                 
                 <div class="mb-4">
                     <label for="email" class="block text-gray-700">Email:</label>
-                    <input type="email" id="email" class="border p-2 w-full" placeholder="Digite o email" required>
+                    <input type="email" id="email" class="border p-2 w-full" placeholder="Digite seu email" required>
                 </div>
                 
                 <div class="mb-4">
-                    <label for="password" class="block text-gray-700">Senha:</label>
-                    <input type="password" id="password" class="border p-2 w-full" placeholder="Digite a senha" required>
+                    <label for="senha" class="block text-gray-700">Senha:</label>
+                    <input type="password" id="senha" class="border p-2 w-full" placeholder="Digite sua senha" required>
                 </div>
 
                 <div class="mb-4">
-                    <label for="role" class="block text-gray-700">Tipo de Usuário:</label>
-                    <select id="role" class="border p-2 w-full" required>
-                        <option value="admin">Administrador</option>
-                        <option value="cliente">Cliente</option>
-                        <option value="fiscal">Fiscal</option>
+                    <label for="cargo" class="block text-gray-700">Tipo de Usuário:</label>
+                    <select id="cargo" class="border p-2 w-full" required>
+                        <option value="Administrador">Administrador</option>
+                        <option value="Cliente">Cliente</option>
+                        <option value="Fiscal">Fiscal</option>
                     </select>
                 </div>
 
@@ -41,16 +41,16 @@ export function renderCadastroScreen() {
         </div>
     `;
 
-    document.getElementById("cadastroForm").addEventListener("submit", (e) => {
+    document.getElementById("cadastroForm").addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const username = document.getElementById("username").value;
+        const nome = document.getElementById("nome").value;
         const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-        const role = document.getElementById("role").value;
+        const senha = document.getElementById("senha").value;
+        const cargo = document.getElementById("cargo").value;
 
-        // Cria o usuário e adiciona ao localStorage
-        addUser({ username, email, password, role });
+        // Cria o usuário e adiciona ao Supabase
+        await addUser({ nome, email, senha, cargo });
 
         alert("Usuário cadastrado com sucesso!");
         navigateTo('login');
