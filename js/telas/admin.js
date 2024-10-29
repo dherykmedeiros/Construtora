@@ -1,6 +1,6 @@
 // js/telas/admin.js
 import { _supabase } from '../supabase.js';
-import { logoutUser } from '../app.js';
+import { logoutUser, navigateTo } from '../app.js';
 
 export async function renderAdminScreen() {
     const app = document.getElementById("app");
