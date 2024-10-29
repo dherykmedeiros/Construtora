@@ -64,6 +64,12 @@ function navigateTo(screen) {
         if (screen === 'login') screen = roleScreen;
     }
 
+    // Se o usuário não for administrador e tentar acessar a tela de cadastro
+    if (screen === 'cadastro' && authenticatedUser && authenticatedUser.cargo !== 'Administrador') {
+        alert("Acesso negado! Apenas administradores podem cadastrar usuários.");
+        screen = authenticatedUser.cargo.toLowerCase(); // Redireciona para a tela do usuário
+    }
+
     // Renderiza a tela com base no valor de `screen`
     if (screen === 'login') {
         renderLoginScreen();

@@ -6,7 +6,7 @@ async function uploadImagens(arquivos) {
     const urlsImagens = [];
 
     for (const arquivo of arquivos) {
-        const nomeArquivo = `${Date.now()}-${arquivo.name}`; // Nome único para o arquivo
+        const nomeArquivo = `${Date.now()}-${arquivo.name}`;
         const { data, error } = await _supabase
             .storage
             .from('imagensRelatorio')
@@ -54,7 +54,7 @@ async function enviarRelatorio() {
         atualizacoes,
         imagens: urlsImagens,
         localizacao,
-        created_at: new Date()  // Salva a data de criação
+        created_at: new Date()
     }]);
 
     if (error) {
@@ -62,8 +62,8 @@ async function enviarRelatorio() {
         alert(`Erro ao enviar relatório: ${error.message}`);
     } else {
         alert('Relatório enviado com sucesso!');
-        document.getElementById('formRelatorio').reset();  // Limpa o formulário
-        await carregarRelatorios();  // Atualiza a lista de relatórios
+        document.getElementById('formRelatorio').reset();
+        await carregarRelatorios();
     }
 }
 
@@ -72,7 +72,7 @@ async function carregarRelatorios() {
     const { data, error } = await _supabase
         .from('relatorios')
         .select('*')
-        .order('created_at', { ascending: false });  // Ordena por data, mais recentes primeiro
+        .order('created_at', { ascending: false });
 
     if (error) {
         console.error('Erro ao carregar relatórios:', error.message);
@@ -81,7 +81,7 @@ async function carregarRelatorios() {
     }
 
     const listaRelatorios = document.getElementById('listaRelatorios');
-    listaRelatorios.innerHTML = '';  // Limpa a lista antes de renderizar
+    listaRelatorios.innerHTML = '';
 
     data.forEach((relatorio) => {
         const item = document.createElement('div');
@@ -91,14 +91,32 @@ async function carregarRelatorios() {
             <h3 class="text-xl font-semibold">${relatorio.nome}</h3>
             <p><strong>Atualizações:</strong> ${relatorio.atualizacoes}</p>
             <p><strong>Localização:</strong> ${relatorio.localizacao}</p>
+            <p><strong>Status:</strong> ${relatorio.status}</p>
+            <p><strong>Assinatura:</strong> ${relatorio.assinado ? 'Sim' : 'Não'}</p> <!-- Exibe "Sim" ou "Não" -->
             <p><strong>Data:</strong> ${new Date(relatorio.created_at).toLocaleString()}</p>
-            <div class="mt-2">
-                ${relatorio.imagens.map(url => `<img src="${url}" alt="Imagem" class="w-full h-auto mb-2" />`).join('')}
+            <div class="mt-2 grid grid-cols-3 gap-2">
+                ${relatorio.imagens.map(url => `
+                    <img src="${url}" alt="Imagem" class="w-full h-auto cursor-pointer rounded" onclick="abrirImagemModal('${url}')" />
+                `).join('')}
             </div>
         `;
 
         listaRelatorios.appendChild(item);
     });
+}
+
+// Função para abrir a imagem em um modal
+function abrirImagemModal(url) {
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    modal.style.display = 'flex';
+    modalImg.src = url;
+}
+
+// Função para fechar o modal
+function fecharModal() {
+    const modal = document.getElementById('modal');
+    modal.style.display = 'none';
 }
 
 // Renderiza a tela do fiscal
@@ -137,7 +155,13 @@ export function renderFiscalScreen() {
                 </button>
             </form>
 
-            <div id="listaRelatorios" class="mt-6"></div>  <!-- Local para renderizar os relatórios -->
+            <div id="listaRelatorios" class="mt-6"></div>
+        </div>
+
+        <!-- Modal para visualizar a imagem em tamanho completo -->
+        <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <span class="absolute top-4 right-4 text-white text-2xl cursor-pointer" onclick="fecharModal()">&times;</span>
+            <img id="modalImg" class="max-w-full max-h-full rounded-lg" />
         </div>
     `;
 
@@ -147,5 +171,5 @@ export function renderFiscalScreen() {
         await enviarRelatorio();
     });
 
-    carregarRelatorios();  // Carrega os relatórios ao renderizar a tela
+    carregarRelatorios();
 }

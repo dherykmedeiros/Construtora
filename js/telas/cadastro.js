@@ -1,12 +1,20 @@
 // js/telas/cadastro.js
-import { navigateTo, addUser } from '../app.js';
+import { navigateTo, addUser, getAuthenticatedUser } from '../app.js';
 
 export function renderCadastroScreen() {
+    const user = getAuthenticatedUser();
+
+    // Verifica se o usuário é um administrador
+    if (!user || user.cargo !== 'Administrador') {
+        alert("Acesso negado! Apenas administradores podem cadastrar usuários.");
+        navigateTo(user ? user.cargo.toLowerCase() : 'login');
+        return;
+    }
+
     const app = document.getElementById("app");
     app.innerHTML = `
         <div class="bg-white p-6 rounded-lg shadow-md max-w-sm mx-auto">
             <h2 class="text-2xl font-semibold mb-4 text-center">Cadastro</h2>
-            
             <form id="cadastroForm">
                 <div class="mb-4">
                     <label for="nome" class="block text-gray-700">Nome Completo:</label>

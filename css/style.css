@@ -1,0 +1,8 @@
+#imageModal {
+    z-index: 1000;
+}
+
+#modalImage {
+    max-width: 90%;
+    max-height: 90%;
+}
