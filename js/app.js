@@ -83,4 +83,4 @@ const authenticatedUser = getAuthenticatedUser();
 navigateTo(authenticatedUser ? authenticatedUser.cargo.toLowerCase() : 'login');
 
 // Exporta as funções para que outros módulos possam usá-las
-export { navigateTo, addUser, loginUser, logoutUser };
+export { navigateTo, addUser, loginUser, logoutUser, getAuthenticatedUser };
