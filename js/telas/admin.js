@@ -1,26 +1,27 @@
 // js/telas/admin.js
-import { navigateTo } from '../app.js';
-import { _supabase} from '../supabase.js';
+import { _supabase } from '../supabase.js';
+import { logoutUser } from '../app.js';
 
 export async function renderAdminScreen() {
     const app = document.getElementById("app");
     app.innerHTML = `
         <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
-            <h2 class="text-2xl font-semibold mb-4 text-center">Painel do Administrador</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold">Painel do Administrador</h2>
+                <button id="logoutButton" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+            </div>
             <p class="text-center mb-6">Bem-vindo, Administrador! Aqui você pode gerenciar o sistema.</p>
 
-            <!-- Botão para redirecionar para a tela de cadastro -->
-            <div class="flex justify-end mb-4">
-                <button id="btnCadastro" class="bg-blue-500 text-white px-4 py-2 rounded">Novo Cadastro</button>
-            </div>
-
             <div id="userList" class="mt-4"></div>
+            <button id="goToCadastroButton" class="bg-blue-500 text-white py-2 px-4 rounded mt-6">
+                Cadastrar Novo Usuário
+            </button>
         </div>
     `;
 
-    document.getElementById("btnCadastro").addEventListener("click", () => {
-        // Redireciona para a tela de cadastro
-        navigateTo('cadastro');
+    document.getElementById("logoutButton").addEventListener("click", logoutUser);
+    document.getElementById("goToCadastroButton").addEventListener("click", () => {
+        navigateTo("cadastro");
     });
 
     const userList = document.getElementById("userList");
