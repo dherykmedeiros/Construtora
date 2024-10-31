@@ -14,15 +14,26 @@ export async function renderClientScreen() {
 
             <div id="relatorioList" class="mt-4"></div>
         </div>
-        <div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
-            <img id="modalImage" class="max-w-full max-h-full" src="" alt="Imagem do Relatório" />
+        <!-- Modal de Carrossel para visualizar as imagens -->
+        <div id="imageCarouselModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
+            <button id="closeCarousel" class="absolute top-4 right-4 text-white text-2xl cursor-pointer">&times;</button>
+            <button id="prevImage" class="absolute left-4 text-white text-3xl cursor-pointer">&larr;</button>
+            <img id="carouselImage" class="max-w-full max-h-full" src="" alt="Imagem do Relatório" />
+            <button id="nextImage" class="absolute right-4 text-white text-3xl cursor-pointer">&rarr;</button>
         </div>
     `;
 
     document.getElementById("logoutButton").addEventListener("click", logoutUser);
 
-    const imageModal = document.getElementById("imageModal");
-    const modalImage = document.getElementById("modalImage");
+    const relatorioList = document.getElementById("relatorioList");
+    const carouselModal = document.getElementById("imageCarouselModal");
+    const carouselImage = document.getElementById("carouselImage");
+    const closeCarousel = document.getElementById("closeCarousel");
+    const prevImage = document.getElementById("prevImage");
+    const nextImage = document.getElementById("nextImage");
+
+    let currentImageIndex = 0;
+    let currentImages = [];
 
     // Função para carregar relatórios aprovados
     async function loadRelatoriosAprovados() {
@@ -37,7 +48,6 @@ export async function renderClientScreen() {
             return;
         }
 
-        const relatorioList = document.getElementById("relatorioList");
         relatorioList.innerHTML = `
             <h3 class="text-xl font-semibold">Relatórios Aprovados</h3>
             <table class="table-auto w-full bg-gray-100 rounded-lg mt-4 shadow">
@@ -46,8 +56,9 @@ export async function renderClientScreen() {
                         <th class="px-4 py-2">Nome do Relatório</th>
                         <th class="px-4 py-2">Data</th>
                         <th class="px-4 py-2">Localização</th>
+                        <th class="px-4 py-2">Atualizações</th>
                         <th class="px-4 py-2">Assinado</th>
-                        <th class="px-4 py-2">Imagens</th>
+                        <th class="px-4 py-2">Imagem</th>
                         <th class="px-4 py-2">Ações</th>
                     </tr>
                 </thead>
@@ -59,11 +70,10 @@ export async function renderClientScreen() {
                                     <td class="border px-4 py-2">${relatorio.nome}</td>
                                     <td class="border px-4 py-2">${new Date(relatorio.created_at).toLocaleDateString()}</td>
                                     <td class="border px-4 py-2">${relatorio.localizacao}</td>
+                                    <td class="border px-4 py-2">${relatorio.atualizacoes}</td>
                                     <td class="border px-4 py-2">${relatorio.assinado ? '✔️' : '❌'}</td>
                                     <td class="border px-4 py-2">
-                                        ${relatorio.imagens.map(img => `
-                                            <img src="${img}" alt="Imagem do Relatório" class="h-24 w-24 object-cover m-1 rounded cursor-pointer" onclick="openImage('${img}')" />
-                                        `).join('')}
+                                        <img src="${relatorio.imagens[0]}" alt="Imagem do Relatório" class="h-24 w-24 object-cover m-1 rounded cursor-pointer" data-images='${JSON.stringify(relatorio.imagens)}' />
                                     </td>
                                     <td class="border px-4 py-2 text-center">
                                         <button class="bg-green-500 text-white px-2 py-1 rounded shadow ${relatorio.assinado ? 'opacity-50 cursor-not-allowed' : ''}" 
@@ -79,22 +89,42 @@ export async function renderClientScreen() {
                                 </tr>
                             `
                         ).join('')
-                        : '<tr><td class="border px-4 py-2 text-center" colspan="6">Nenhum relatório aprovado encontrado.</td></tr>'
+                        : '<tr><td class="border px-4 py-2 text-center" colspan="7">Nenhum relatório aprovado encontrado.</td></tr>'
                     }
                 </tbody>
             </table>
         `;
+
+        // Adicionar event listener para abrir o carrossel nas imagens
+        document.querySelectorAll('[data-images]').forEach(img => {
+            img.addEventListener('click', () => openCarousel(JSON.parse(img.getAttribute('data-images'))));
+        });
     }
 
-    // Função para abrir imagem em modal
-    window.openImage = function(src) {
-        modalImage.src = src;
-        imageModal.classList.remove("hidden");
-    };
+    // Função para abrir o modal de carrossel com as imagens
+    function openCarousel(images) {
+        currentImages = images;
+        currentImageIndex = 0;
+        carouselImage.src = currentImages[currentImageIndex];
+        carouselModal.classList.remove("hidden");
+    }
 
-    // Fechar o modal ao clicar na imagem ou fora dela
-    imageModal.addEventListener("click", () => {
-        imageModal.classList.add("hidden");
+    // Funções de navegação no carrossel
+    function showNextImage() {
+        currentImageIndex = (currentImageIndex + 1) % currentImages.length;
+        carouselImage.src = currentImages[currentImageIndex];
+    }
+
+    function showPrevImage() {
+        currentImageIndex = (currentImageIndex - 1 + currentImages.length) % currentImages.length;
+        carouselImage.src = currentImages[currentImageIndex];
+    }
+
+    // Eventos para o carrossel e o fechamento do modal
+    nextImage.addEventListener("click", showNextImage);
+    prevImage.addEventListener("click", showPrevImage);
+    closeCarousel.addEventListener("click", () => {
+        carouselModal.classList.add("hidden");
     });
 
     window.signAsSeen = async function(relatorioId) {

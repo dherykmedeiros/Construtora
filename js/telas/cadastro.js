@@ -1,7 +1,7 @@
 // js/telas/cadastro.js
-import { navigateTo, addUser, getAuthenticatedUser } from '../app.js';
+import { navigateTo, addUser, getAuthenticatedUser, fetchObras } from '../app.js';
 
-export function renderCadastroScreen() {
+export async function renderCadastroScreen() {
     const user = getAuthenticatedUser();
 
     // Verifica se o usuário é um administrador
@@ -10,6 +10,9 @@ export function renderCadastroScreen() {
         navigateTo(user ? user.cargo.toLowerCase() : 'login');
         return;
     }
+
+    // Busca as obras no banco de dados
+    const obras = await fetchObras();
 
     const app = document.getElementById("app");
     app.innerHTML = `
@@ -40,6 +43,15 @@ export function renderCadastroScreen() {
                     </select>
                 </div>
 
+                <!-- Campo de seleção da obra, inicialmente escondido -->
+                <div id="obraField" class="mb-4 hidden">
+                    <label for="obra" class="block text-gray-700">Selecione a Obra:</label>
+                    <select id="obra" class="border p-2 w-full">
+                        <option value="">Selecione uma obra</option>
+                        ${obras.map(obra => `<option value="${obra.id}">${obra.nome_da_obra} - ${obra.endereco}</option>`).join('')}
+                    </select>
+                </div>
+
                 <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded w-full">Cadastrar</button>
             </form>
 
@@ -49,16 +61,24 @@ export function renderCadastroScreen() {
         </div>
     `;
 
+    // Mostra o campo de obra quando o tipo de usuário é "Cliente"
+    const cargoSelect = document.getElementById("cargo");
+    const obraField = document.getElementById("obraField");
+    cargoSelect.addEventListener("change", () => {
+        obraField.classList.toggle("hidden", cargoSelect.value !== "Cliente");
+    });
+
     document.getElementById("cadastroForm").addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const nome = document.getElementById("nome").value;
         const email = document.getElementById("email").value;
         const senha = document.getElementById("senha").value;
-        const cargo = document.getElementById("cargo").value;
+        const cargo = cargoSelect.value;
+        const obraId = cargo === "Cliente" ? document.getElementById("obra").value : null;
 
         // Cria o usuário e adiciona ao Supabase
-        await addUser({ nome, email, senha, cargo });
+        await addUser({ nome, email, senha, cargo, obra_id: obraId });
 
         alert("Usuário cadastrado com sucesso!");
         navigateTo('login');

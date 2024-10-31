@@ -17,14 +17,38 @@ export async function renderAdminScreen() {
             <button id="goToCadastroButton" class="bg-blue-500 text-white py-2 px-4 rounded mt-6">
                 Cadastrar Novo Usuário
             </button>
+            <button id="goToCadastroObraButton" class="bg-green-500 text-white py-2 px-4 rounded mt-6">
+                Cadastrar Nova Obra
+            </button>
+        </div>
+
+        <!-- Modal para cadastrar nova obra -->
+        <div id="obraModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md max-w-lg w-full">
+                <h3 class="text-2xl font-semibold mb-4">Cadastrar Nova Obra</h3>
+                <form id="obraForm">
+                    <div class="mb-4">
+                        <label for="nomeDaObra" class="block text-gray-700">Nome da Obra:</label>
+                        <input type="text" id="nomeDaObra" class="border border-gray-300 p-2 rounded w-full" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="enderecoObra" class="block text-gray-700">Endereço:</label>
+                        <input type="text" id="enderecoObra" class="border border-gray-300 p-2 rounded w-full" required>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" id="cancelObraButton" class="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancelar</button>
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Cadastrar</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <!-- Modal para visualizar a imagem em um carrossel -->
         <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-            <span class="absolute top-4 right-4 text-white text-2xl cursor-pointer" onclick="fecharModal()">&times;</span>
+            <span class="absolute top-4 right-4 text-white text-2xl cursor-pointer" id="closeModal">&times;</span>
             <img id="modalImg" class="max-w-full max-h-full rounded-lg" />
-            <button id="prevImg" class="absolute left-4 text-white text-2xl cursor-pointer" onclick="navegarImagem(-1)">&#10094;</button>
-            <button id="nextImg" class="absolute right-4 text-white text-2xl cursor-pointer" onclick="navegarImagem(1)">&#10095;</button>
+            <button id="prevImg" class="absolute left-4 text-white text-2xl cursor-pointer">&#10094;</button>
+            <button id="nextImg" class="absolute right-4 text-white text-2xl cursor-pointer">&#10095;</button>
         </div>
     `;
 
@@ -33,12 +57,50 @@ export async function renderAdminScreen() {
         navigateTo("cadastro");
     });
 
+    // Event listener to open the obra registration modal
+    document.getElementById("goToCadastroObraButton").addEventListener("click", () => {
+        document.getElementById("obraModal").classList.remove("hidden");
+    });
+
+    const obraForm = document.getElementById("obraForm");
+    const obraModal = document.getElementById("obraModal");
+    const cancelObraButton = document.getElementById("cancelObraButton");
+
+    // Function to handle obra registration
+    obraForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const nomeDaObra = document.getElementById("nomeDaObra").value;
+        const enderecoObra = document.getElementById("enderecoObra").value;
+
+        const { error } = await _supabase.from('obras').insert([{ nome_da_obra: nomeDaObra, endereco: enderecoObra }]);
+
+        if (error) {
+            console.error('Erro ao cadastrar obra:', error.message);
+            alert("Erro ao cadastrar obra.");
+        } else {
+            alert("Obra cadastrada com sucesso.");
+            obraModal.classList.add("hidden");
+            obraForm.reset();
+            loadObras();
+        }
+    });
+
+    cancelObraButton.addEventListener("click", () => {
+        obraModal.classList.add("hidden");
+    });
+
     const userList = document.getElementById("userList");
     const relatorioList = document.getElementById("relatorioList");
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    const closeModalBtn = document.getElementById('closeModal');
+    const prevImgBtn = document.getElementById('prevImg');
+    const nextImgBtn = document.getElementById('nextImg');
+
     let imagensAtuais = [];
     let indiceImagemAtual = 0;
 
-    // Função para carregar usuários
     async function loadUsers() {
         const { data: users, error } = await _supabase.from('usuarios').select('*');
 
@@ -79,25 +141,8 @@ export async function renderAdminScreen() {
         `;
     }
 
-    // Função para deletar usuário
-    window.deleteUser = async function(userId) {
-        const { error } = await _supabase.from('usuarios').delete().eq('id', userId);
-
-        if (error) {
-            console.error('Erro ao deletar usuário:', error.message);
-            alert("Erro ao deletar usuário.");
-        } else {
-            alert("Usuário deletado com sucesso.");
-            loadUsers();
-        }
-    };
-
-    // Função para carregar relatórios pendentes
     async function loadRelatoriosPendentes() {
-        const { data: relatorios, error } = await _supabase
-            .from('relatorios')
-            .select('*')
-            .eq('status', 'Pendente');
+        const { data: relatorios, error } = await _supabase.from('relatorios').select('*').eq('status', 'Pendente');
 
         if (error) {
             console.error('Erro ao carregar relatórios pendentes:', error.message);
@@ -126,7 +171,7 @@ export async function renderAdminScreen() {
                             <td class="border px-4 py-2">${relatorio.localizacao || 'Não informado'}</td>
                             <td class="border px-4 py-2">${new Date(relatorio.created_at).toLocaleString()}</td>
                             <td class="border px-4 py-2">
-                                <img src="${relatorio.imagens[0]}" alt="Imagem do relatório" class="w-12 h-12 rounded cursor-pointer" onclick="abrirImagemModal(${JSON.stringify(relatorio.imagens)})" />
+                                <img src="${relatorio.imagens[0]}" alt="Imagem do relatório" class="w-12 h-12 rounded cursor-pointer" data-imagens='${JSON.stringify(relatorio.imagens)}' />
                             </td>
                             <td class="border px-4 py-2">
                                 <button class="bg-green-500 text-white px-2 py-1 rounded" onclick="updateRelatorioStatus('${relatorio.id}', 'Aprovado')">Aprovar</button>
@@ -137,51 +182,47 @@ export async function renderAdminScreen() {
                 </tbody>
             </table>
         `;
+
+        document.querySelectorAll('[data-imagens]').forEach(imgElement => {
+            imgElement.addEventListener('click', () => {
+                const imagens = JSON.parse(imgElement.getAttribute('data-imagens'));
+                abrirImagemModal(imagens);
+            });
+        });
     }
 
-    // Função para atualizar o status do relatório
-    window.updateRelatorioStatus = async function(relatorioId, novoStatus) {
-        const { error } = await _supabase
-            .from('relatorios')
-            .update({ status: novoStatus })
-            .eq('id', relatorioId);
-
-        if (error) {
-            console.error('Erro ao atualizar status do relatório:', error.message);
-            alert("Erro ao atualizar status do relatório.");
-        } else {
-            alert(`Relatório ${novoStatus === 'Aprovado' ? 'aprovado' : 'reprovado'} com sucesso.`);
-            loadRelatoriosPendentes(); // Atualiza a lista após a ação
-        }
-    };
-
-    // Função para abrir imagem em um carrossel no modal
-    window.abrirImagemModal = function(imagens) {
+    function abrirImagemModal(imagens) {
         imagensAtuais = imagens;
         indiceImagemAtual = 0;
-        exibirImagemModal();
+        atualizarImagemModal();
+        modal.classList.remove('hidden');
     }
-
-    // Função para exibir a imagem atual no modal
-    function exibirImagemModal() {
-        const modal = document.getElementById('modal');
-        const modalImg = document.getElementById('modalImg');
-        modal.style.display = 'flex';
+    
+    function atualizarImagemModal() {
         modalImg.src = imagensAtuais[indiceImagemAtual];
     }
-
-    // Função para navegar entre as imagens no modal
-    window.navegarImagem = function(direcao) {
-        indiceImagemAtual = (indiceImagemAtual + direcao + imagensAtuais.length) % imagensAtuais.length;
-        exibirImagemModal();
-    }
-
-    // Função para fechar o modal
-    window.fecharModal = function() {
-        const modal = document.getElementById('modal');
-        modal.style.display = 'none';
-    }
+    
+    // Fecha o modal ao clicar no botão de fechar
+    closeModalBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+    
+    // Botão para imagem anterior
+    prevImgBtn.addEventListener('click', () => {
+        indiceImagemAtual = (indiceImagemAtual - 1 + imagensAtuais.length) % imagensAtuais.length;
+        atualizarImagemModal();
+    });
+    
+    // Botão para próxima imagem
+    nextImgBtn.addEventListener('click', () => {
+        indiceImagemAtual = (indiceImagemAtual + 1) % imagensAtuais.length;
+        atualizarImagemModal();
+    });
 
     loadUsers();
     loadRelatoriosPendentes();
+}
+
+export async function loadObras() {
+    // This function would fetch and render a list of obras if needed in the future.
 }

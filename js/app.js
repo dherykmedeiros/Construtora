@@ -35,6 +35,16 @@ async function addUser(user) {
     return true;
 }
 
+// Função para buscar todas as obras do banco de dados
+async function fetchObras() {
+    const { data, error } = await _supabase.from('obras').select('*');
+    if (error) {
+        console.error("Erro ao buscar obras:", error.message);
+        return [];
+    }
+    return data;
+}
+
 // Função para verificar o login
 async function loginUser(email, password) {
     const { data: user, error } = await _supabase
@@ -89,4 +99,4 @@ const authenticatedUser = getAuthenticatedUser();
 navigateTo(authenticatedUser ? authenticatedUser.cargo.toLowerCase() : 'login');
 
 // Exporta as funções para que outros módulos possam usá-las
-export { navigateTo, addUser, loginUser, logoutUser, getAuthenticatedUser };
+export { navigateTo, addUser, loginUser, logoutUser, getAuthenticatedUser, fetchObras };
