@@ -1,7 +1,14 @@
 // js/telas/login.js
-import { navigateTo, loginUser } from '../app.js';
+import { navigateTo, loginUser, getAuthenticatedUser } from '../app.js';
 
 export function renderLoginScreen() {
+    // Verifica se o usuário já está autenticado
+    const authenticatedUser = getAuthenticatedUser();
+    if (authenticatedUser) {
+        navigateTo(authenticatedUser.cargo.toLowerCase());
+        return;
+    }
+
     const app = document.getElementById("app");
     app.innerHTML = `
         <div class="bg-white p-6 rounded-lg shadow-md max-w-sm mx-auto">
@@ -10,12 +17,12 @@ export function renderLoginScreen() {
             <form id="loginForm">
                 <div class="mb-4">
                     <label for="email" class="block text-gray-700">Email:</label>
-                    <input type="email" id="email" class="border p-2 w-full" placeholder="Digite seu email" required>
+                    <input type="email" id="email" class="border p-2 w-full text-gray-800" placeholder="Digite seu email" required>
                 </div>
                 
                 <div class="mb-4">
                     <label for="password" class="block text-gray-700">Senha:</label>
-                    <input type="password" id="password" class="border p-2 w-full" placeholder="Digite sua senha" required>
+                    <input type="password" id="password" class="border p-2 w-full text-gray-800" placeholder="Digite sua senha" required>
                 </div>
 
                 <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded w-full">Entrar</button>
