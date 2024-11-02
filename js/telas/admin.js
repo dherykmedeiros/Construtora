@@ -57,7 +57,6 @@ export async function renderAdminScreen() {
         navigateTo("cadastro");
     });
 
-    // Event listener to open the obra registration modal
     document.getElementById("goToCadastroObraButton").addEventListener("click", () => {
         document.getElementById("obraModal").classList.remove("hidden");
     });
@@ -66,7 +65,6 @@ export async function renderAdminScreen() {
     const obraModal = document.getElementById("obraModal");
     const cancelObraButton = document.getElementById("cancelObraButton");
 
-    // Function to handle obra registration
     obraForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -168,14 +166,14 @@ export async function renderAdminScreen() {
                         <tr>
                             <td class="border px-4 py-2">${relatorio.nome}</td>
                             <td class="border px-4 py-2">${relatorio.atualizacoes}</td>
-                            <td class="border px-4 py-2">${relatorio.localizacao || 'Não informado'}</td>
-                            <td class="border px-4 py-2">${new Date(relatorio.created_at).toLocaleString()}</td>
-                            <td class="border px-4 py-2">
-                                <img src="${relatorio.imagens[0]}" alt="Imagem do relatório" class="w-12 h-12 rounded cursor-pointer" data-imagens='${JSON.stringify(relatorio.imagens)}' />
+                            <td class="border px-4 py-2">${relatorio.localizacao}</td>
+                            <td class="border px-4 py-2">${new Date(relatorio.created_at).toLocaleDateString()}</td>
+                            <td class="border px-4 py-2 cursor-pointer">
+                                <img src="${relatorio.imagens[0]}" alt="Imagem do relatório" class="w-12 h-12 rounded" data-imagens='${JSON.stringify(relatorio.imagens)}' />
                             </td>
                             <td class="border px-4 py-2">
-                                <button class="bg-green-500 text-white px-2 py-1 rounded" onclick="updateRelatorioStatus('${relatorio.id}', 'Aprovado')">Aprovar</button>
-                                <button class="bg-red-500 text-white px-2 py-1 rounded ml-2" onclick="updateRelatorioStatus('${relatorio.id}', 'Reprovado')">Reprovar</button>
+                                <button class="bg-green-500 text-white px-2 py-1 rounded approve-btn" data-id="${relatorio.id}" data-status="Aprovado">Aprovar</button>
+                                <button class="bg-red-500 text-white px-2 py-1 rounded ml-2 reject-btn" data-id="${relatorio.id}" data-status="Reprovado">Reprovar</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -189,6 +187,26 @@ export async function renderAdminScreen() {
                 abrirImagemModal(imagens);
             });
         });
+
+        document.querySelectorAll('.approve-btn, .reject-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const id = button.getAttribute('data-id');
+                const status = button.getAttribute('data-status');
+                updateRelatorioStatus(id, status);
+            });
+        });
+    }
+
+    async function updateRelatorioStatus(id, status) {
+        const { error } = await _supabase.from('relatorios').update({ status }).eq('id', id);
+
+        if (error) {
+            console.error('Erro ao atualizar status do relatório:', error.message);
+            alert("Erro ao atualizar status do relatório.");
+        } else {
+            alert("Status do relatório atualizado com sucesso.");
+            loadRelatoriosPendentes();
+        }
     }
 
     function abrirImagemModal(imagens) {
@@ -197,23 +215,20 @@ export async function renderAdminScreen() {
         atualizarImagemModal();
         modal.classList.remove('hidden');
     }
-    
+
     function atualizarImagemModal() {
         modalImg.src = imagensAtuais[indiceImagemAtual];
     }
-    
-    // Fecha o modal ao clicar no botão de fechar
+
     closeModalBtn.addEventListener('click', () => {
         modal.classList.add('hidden');
     });
-    
-    // Botão para imagem anterior
+
     prevImgBtn.addEventListener('click', () => {
         indiceImagemAtual = (indiceImagemAtual - 1 + imagensAtuais.length) % imagensAtuais.length;
         atualizarImagemModal();
     });
-    
-    // Botão para próxima imagem
+
     nextImgBtn.addEventListener('click', () => {
         indiceImagemAtual = (indiceImagemAtual + 1) % imagensAtuais.length;
         atualizarImagemModal();
@@ -224,5 +239,5 @@ export async function renderAdminScreen() {
 }
 
 export async function loadObras() {
-    // This function would fetch and render a list of obras if needed in the future.
+    // Esta função poderia buscar e renderizar uma lista de obras caso seja necessário no futuro.
 }

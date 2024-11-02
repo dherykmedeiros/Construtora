@@ -1,10 +1,19 @@
 import { logoutUser, getAuthenticatedUser } from '../app.js';
 import { _supabase } from '../supabase.js';
 
+// Função para carregar as obras para o seletor
+async function carregarObras() {
+    const { data: obras, error } = await _supabase.from('obras').select('id, nome_da_obra, endereco');
+    if (error) {
+        console.error('Erro ao carregar obras:', error.message);
+        return [];
+    }
+    return obras;
+}
+
 // Função para fazer upload de imagens para o bucket 'imagensRelatorio'
 async function uploadImagens(arquivos) {
     const urlsImagens = [];
-
     for (const arquivo of arquivos) {
         const nomeArquivo = `${Date.now()}-${arquivo.name}`;
         const { data, error } = await _supabase
@@ -25,7 +34,6 @@ async function uploadImagens(arquivos) {
 
         urlsImagens.push(publicUrlData.publicUrl);
     }
-
     return urlsImagens;
 }
 
@@ -33,6 +41,7 @@ async function uploadImagens(arquivos) {
 async function enviarRelatorio() {
     const nome = document.getElementById('nomeRelatorio').value;
     const atualizacoes = document.getElementById('atualizacoes').value;
+    const obraId = document.getElementById('obraSelect').value;
     const localizacao = document.getElementById('localizacao').value;
     const arquivos = document.getElementById('imagens').files;
 
@@ -50,10 +59,11 @@ async function enviarRelatorio() {
 
     const { error } = await _supabase.from('relatorios').insert([{
         usuario_id: usuario.id,
+        obra_id: obraId,
         nome,
         atualizacoes,
-        imagens: urlsImagens,
         localizacao,
+        imagens: urlsImagens,
         created_at: new Date()
     }]);
 
@@ -71,7 +81,10 @@ async function enviarRelatorio() {
 async function carregarRelatorios() {
     const { data, error } = await _supabase
         .from('relatorios')
-        .select('*')
+        .select(`
+            *,
+            obras (nome_da_obra, endereco)
+        `)
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -84,21 +97,23 @@ async function carregarRelatorios() {
     listaRelatorios.innerHTML = '';
 
     data.forEach((relatorio, index) => {
+        const obra = relatorio.obras || {};
+        const nomeDaObra = obra.nome_da_obra || 'Obra não encontrada';
+        const endereco = obra.endereco || 'Endereço não disponível';
+
         const item = document.createElement('div');
         item.className = 'bg-gray-100 p-4 mb-4 rounded shadow';
 
         item.innerHTML = `
             <h3 class="text-xl font-semibold">${relatorio.nome}</h3>
             <p><strong>Atualizações:</strong> ${relatorio.atualizacoes}</p>
-            <p><strong>Localização:</strong> ${relatorio.localizacao}</p>
-            <p><strong>Status:</strong> ${relatorio.status}</p>
-            <p><strong>Assinatura:</strong> ${relatorio.assinado ? 'Sim' : 'Não'}</p>
+            <p><strong>Obra:</strong> ${nomeDaObra}</p>
+            <p><strong>Endereço:</strong> ${endereco}</p>
             <p><strong>Data:</strong> ${new Date(relatorio.created_at).toLocaleString()}</p>
             <div class="mt-2">
                 <img src="${relatorio.imagens[0]}" alt="Imagem" class="w-full h-auto cursor-pointer rounded" onclick="abrirCarrossel(${index})" />
             </div>
         `;
-
         listaRelatorios.appendChild(item);
     });
 
@@ -145,8 +160,10 @@ window.proximaImagem = proximaImagem;
 window.imagemAnterior = imagemAnterior;
 
 // Renderiza a tela do fiscal
-export function renderFiscalScreen() {
+export async function renderFiscalScreen() {
+    const obras = await carregarObras();
     const app = document.getElementById('app');
+
     app.innerHTML = `
         <div class="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto">
             <div class="flex justify-between items-center mb-4">
@@ -155,6 +172,14 @@ export function renderFiscalScreen() {
             </div>
 
             <form id="formRelatorio">
+                <div class="mb-4">
+                    <label for="obraSelect" class="block text-gray-700">Selecionar Obra:</label>
+                    <select id="obraSelect" class="border p-2 w-full" required>
+                        <option value="">Selecione uma obra</option>
+                        ${obras.map(obra => `<option value="${obra.id}" data-endereco="${obra.endereco}">${obra.nome_da_obra}</option>`).join('')}
+                    </select>
+                </div>
+
                 <div class="mb-4">
                     <label for="nomeRelatorio" class="block text-gray-700">Nome do Relatório:</label>
                     <input type="text" id="nomeRelatorio" class="border p-2 w-full" required />
@@ -166,8 +191,8 @@ export function renderFiscalScreen() {
                 </div>
 
                 <div class="mb-4">
-                    <label for="localizacao" class="block text-gray-700">Localização:</label>
-                    <input type="text" id="localizacao" class="border p-2 w-full" />
+                    <label for="localizacao" class="block text-gray-700">Endereço:</label>
+                    <input type="text" id="localizacao" class="border p-2 w-full" readonly />
                 </div>
 
                 <div class="mb-4">
@@ -191,6 +216,12 @@ export function renderFiscalScreen() {
             <button class="absolute right-4 text-white text-2xl cursor-pointer" onclick="proximaImagem()">&#10095;</button>
         </div>
     `;
+
+    document.getElementById('obraSelect').addEventListener('change', (e) => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        const endereco = selectedOption.getAttribute('data-endereco');
+        document.getElementById('localizacao').value = endereco || '';
+    });
 
     document.getElementById('logoutButton').addEventListener('click', logoutUser);
     document.getElementById('formRelatorio').addEventListener('submit', async (e) => {

@@ -1,6 +1,6 @@
 // js/telas/cliente.js
 import { _supabase } from '../supabase.js';
-import { logoutUser } from '../app.js';
+import { logoutUser, getAuthenticatedUser } from '../app.js';
 
 export async function renderClientScreen() {
     const app = document.getElementById("app");
@@ -11,10 +11,8 @@ export async function renderClientScreen() {
                 <button id="logoutButton" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
             </div>
             <p class="text-center">Bem-vindo, Cliente! Aqui você pode visualizar seus relatórios e histórico.</p>
-
             <div id="relatorioList" class="mt-4"></div>
         </div>
-        <!-- Modal de Carrossel para visualizar as imagens -->
         <div id="imageCarouselModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
             <button id="closeCarousel" class="absolute top-4 right-4 text-white text-2xl cursor-pointer">&times;</button>
             <button id="prevImage" class="absolute left-4 text-white text-3xl cursor-pointer">&larr;</button>
@@ -35,12 +33,21 @@ export async function renderClientScreen() {
     let currentImageIndex = 0;
     let currentImages = [];
 
-    // Função para carregar relatórios aprovados
+    // Função para carregar relatórios aprovados vinculados à obra do cliente
     async function loadRelatoriosAprovados() {
+        const authenticatedUser = getAuthenticatedUser();
+        const obraId = authenticatedUser?.obra_id;
+
+        if (!obraId) {
+            relatorioList.innerHTML = "<p class='text-red-500'>Erro: Obra não atribuída ao cliente.</p>";
+            return;
+        }
+
         const { data: relatorios, error } = await _supabase
             .from('relatorios')
             .select('*')
-            .eq('status', 'Aprovado');
+            .eq('status', 'Aprovado')
+            .eq('obra_id', obraId);
 
         if (error) {
             console.error('Erro ao carregar relatórios aprovados:', error.message);
@@ -95,13 +102,11 @@ export async function renderClientScreen() {
             </table>
         `;
 
-        // Adicionar event listener para abrir o carrossel nas imagens
         document.querySelectorAll('[data-images]').forEach(img => {
             img.addEventListener('click', () => openCarousel(JSON.parse(img.getAttribute('data-images'))));
         });
     }
 
-    // Função para abrir o modal de carrossel com as imagens
     function openCarousel(images) {
         currentImages = images;
         currentImageIndex = 0;
@@ -109,7 +114,6 @@ export async function renderClientScreen() {
         carouselModal.classList.remove("hidden");
     }
 
-    // Funções de navegação no carrossel
     function showNextImage() {
         currentImageIndex = (currentImageIndex + 1) % currentImages.length;
         carouselImage.src = currentImages[currentImageIndex];
@@ -120,7 +124,6 @@ export async function renderClientScreen() {
         carouselImage.src = currentImages[currentImageIndex];
     }
 
-    // Eventos para o carrossel e o fechamento do modal
     nextImage.addEventListener("click", showNextImage);
     prevImage.addEventListener("click", showPrevImage);
     closeCarousel.addEventListener("click", () => {
