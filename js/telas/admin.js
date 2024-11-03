@@ -140,7 +140,10 @@ export async function renderAdminScreen() {
     }
 
     async function loadRelatoriosPendentes() {
-        const { data: relatorios, error } = await _supabase.from('relatorios').select('*').eq('status', 'Pendente');
+        const { data: relatorios, error } = await _supabase
+        .from('relatorios')
+        .select('*, obras (nome_da_obra)')
+        .eq('status', 'Pendente');
 
         if (error) {
             console.error('Erro ao carregar relatórios pendentes:', error.message);
@@ -153,6 +156,7 @@ export async function renderAdminScreen() {
             <table class="table-auto w-full bg-gray-100 rounded-lg mt-4">
                 <thead>
                     <tr class="bg-gray-300 text-left">
+                        <th class="px-4 py-2">Nome da Obra</th>
                         <th class="px-4 py-2">Nome do Relatório</th>
                         <th class="px-4 py-2">Atualizações</th>
                         <th class="px-4 py-2">Localização</th>
@@ -164,6 +168,7 @@ export async function renderAdminScreen() {
                 <tbody>
                     ${relatorios.map(relatorio => `
                         <tr>
+                            <td class="border px-4 py-2">${relatorio.obras.nome_da_obra}</td>
                             <td class="border px-4 py-2">${relatorio.nome}</td>
                             <td class="border px-4 py-2">${relatorio.atualizacoes}</td>
                             <td class="border px-4 py-2">${relatorio.localizacao}</td>
