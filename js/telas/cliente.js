@@ -43,11 +43,16 @@ export async function renderClientScreen() {
             return;
         }
 
+        // Obter todos os relatórios aprovados e verificar se já foram assinados pelo usuário
         const { data: relatorios, error } = await _supabase
             .from('relatorios')
-            .select('*')
+            .select(`
+                *,
+                assinaturas!inner(usuario_id)
+            `)
             .eq('status', 'Aprovado')
-            .eq('obra_id', obraId);
+            .eq('obra_id', obraId)
+            .eq('assinaturas.usuario_id', authenticatedUser.id);
 
         if (error) {
             console.error('Erro ao carregar relatórios aprovados:', error.message);
@@ -78,13 +83,13 @@ export async function renderClientScreen() {
                                     <td class="border px-4 py-2">${new Date(relatorio.created_at).toLocaleDateString()}</td>
                                     <td class="border px-4 py-2">${relatorio.localizacao}</td>
                                     <td class="border px-4 py-2">${relatorio.atualizacoes}</td>
-                                    <td class="border px-4 py-2">${relatorio.assinado ? '✔️' : '❌'}</td>
+                                    <td class="border px-4 py-2">${relatorio.assinaturas.length > 0 ? '✔️' : '❌'}</td>
                                     <td class="border px-4 py-2">
                                         <img src="${relatorio.imagens[0]}" alt="Imagem do Relatório" class="h-24 w-24 object-cover m-1 rounded cursor-pointer" data-images='${JSON.stringify(relatorio.imagens)}' />
                                     </td>
                                     <td class="border px-4 py-2 text-center">
-                                        <button class="bg-green-500 text-white px-2 py-1 rounded shadow ${relatorio.assinado ? 'opacity-50 cursor-not-allowed' : ''}" 
-                                            onclick="${relatorio.assinado ? 'event.preventDefault()' : `signAsSeen('${relatorio.id}')`}">
+                                        <button class="bg-green-500 text-white px-2 py-1 rounded shadow ${relatorio.assinaturas.length > 0 ? 'opacity-50 cursor-not-allowed' : ''}" 
+                                            onclick="${relatorio.assinaturas.length > 0 ? 'event.preventDefault()' : `signAsSeen('${relatorio.id}')`}">
                                             <span class="flex items-center justify-center">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -130,18 +135,30 @@ export async function renderClientScreen() {
         carouselModal.classList.add("hidden");
     });
 
+    // Função para registrar a assinatura do relatório na tabela assinaturas
     window.signAsSeen = async function(relatorioId) {
+        const authenticatedUser = getAuthenticatedUser();
+        if (!authenticatedUser) {
+            alert("Usuário não autenticado.");
+            return;
+        }
+
         const { error } = await _supabase
-            .from('relatorios')
-            .update({ assinado: true })
-            .eq('id', relatorioId);
+            .from('assinaturas')
+            .insert([
+                {
+                    relatorio_id: relatorioId,
+                    usuario_id: authenticatedUser.id,
+                    data_assinatura: new Date().toISOString()
+                }
+            ]);
 
         if (error) {
-            console.error('Erro ao assinar relatório como visto:', error.message);
-            alert("Erro ao assinar relatório.");
+            console.error('Erro ao registrar assinatura:', error.message);
+            alert("Erro ao registrar assinatura.");
         } else {
             alert("Relatório assinado com sucesso.");
-            loadRelatoriosAprovados();
+            loadRelatoriosAprovados(); // Recarrega a lista de relatórios para atualizar o status
         }
     };
 
